@@ -35,30 +35,65 @@
     }
     if (isset($_POST['Cancel']))
     {
+        $now = date("Y-m-d H:i:s");
         $whichOrderCancel = $_POST['whichOrderCancel'];
         $statusChange = "Cancel";
-        $statusConfirm = "Not_Finish";
-        try{
-          $conn->beginTransaction();
-          $stmt_d = $conn->prepare("UPDATE orders SET status = :statusChange WHERE OID = :whichOrderCancel AND status = :statusConfirm");
-          $stmt_d->execute(array("statusChange"=>$statusChange, "whichOrderCancel"=>$whichOrderCancel, "statusConfirm"=>$statusConfirm));
-          $conn->commit();
+        $stmt_confirm = $conn->prepare("SELECT * FROM orders WHERE OID = :whichOrderCancel");
+        $stmt_confirm->execute(array("whichOrderCancel"=>$whichOrderCancel));
+        $order_data =  $stmt_confirm -> fetch(PDO::FETCH_ASSOC);
+        if($order_data['status'] == "Cancel"){
+          echo "<script>alert('店家已取消訂單，刷新頁面即可')</script>";
         }
-        catch(Exception $e){
-          if ($conn->inTransaction())
-          $conn->rollBack();
-          $msg=$e->getMessage();
-          echo <<<EOT
-          <!DOCTYPE html>
-          <html>
-              <body>
-              <script>
-              alert("$msg");
-              window.location.replace("index.php");
-              </script>
-              </body>
-          </html>
-          EOT;
+        else{
+          try
+          {
+            $conn->beginTransaction();
+            $stmt_select_content = $conn->prepare("SELECT * FROM content WHERE OID =:whichOrderCancel");
+            $stmt_select_content->execute(array("whichOrderCancel"=>$whichOrderCancel));
+            $all_content = $stmt_select_content->fetchAll(PDO::FETCH_ASSOC);
+            foreach($all_content as $content)
+            {
+              $stmt_addMeal = $conn->prepare("UPDATE meal SET quantity = (SELECT quantity FROM meal WHERE ID = :MID) + :add_q WHERE ID = :MID");
+              $stmt_addMeal->execute(array("MID"=>$content['MID'], "add_q"=>$content['quantity']));   
+            }
+            $stmt_cancel = $conn->prepare("UPDATE orders SET status = :statusChange WHERE OID = :whichOrderCancel");
+            $stmt_cancel->execute(array("statusChange"=>$statusChange, "whichOrderCancel"=>$whichOrderCancel));
+            # 使用者拿回錢
+            $stmt_user_get=$conn->prepare("UPDATE users SET wallet = (SELECT wallet FROM users WHERE Account= :user) + :total WHERE Account= :user");
+            $stmt_user_get->execute(array("user"=>$order_data['user_account'], "total"=>$order_data['total_price']));
+            # 店家退款
+            $stmt_shop_loss=$conn->prepare("UPDATE users SET wallet = (SELECT wallet FROM users WHERE Account= :shop_user) - :total WHERE Account= :shop_user");
+            $stmt_shop_loss->execute(array("shop_user"=>$order_data['shop_account'], "total"=>$order_data['total_price']));
+            # 使用者交易紀錄
+            $action = "Receive";
+            $add = '+'.$order_data['total_price'];
+            $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:user, :action, :now, :shop_name, :add )");
+            $stmt10->execute(array("user"=>$order_data['user_account'], "action"=>$action, "now"=>$now, "shop_name"=>$order_data['shop_name'], "add"=>$add));
+            # 店家交易紀錄
+            $action = "Payment";
+            $sub = '-'.$order_data['total_price'];
+            $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:shop_user, :action, :now, :user, :sub )");
+            $stmt10->execute(array("shop_user"=>$order_data['shop_account'], "action"=>$action, "now"=>$now, "user"=>$order_data['user_account'], "sub"=>$sub));
+            $conn->commit();
+          }
+          catch(Exception $e)
+          {
+              if ($conn->inTransaction())
+              $conn->rollBack();
+              $msg=$e->getMessage();
+              echo <<<EOT
+              <!DOCTYPE html>
+              <html>
+                  <body>
+                  <script>
+                  alert("$msg");
+                  window.location.replace("index.php");
+                  </script>
+                  </body>
+              </html>
+              EOT;
+          }
+
         }
     }
 ?>

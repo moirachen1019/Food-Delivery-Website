@@ -34,22 +34,19 @@
                             if(isset($_POST['OID'])){
                                 $stmt = $conn->prepare("SELECT * FROM content WHERE OID = :OID ");
                                 $stmt->execute(array("OID"=>$OID));
-                                $MIDs =  $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                $meal_data =  $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 $ii = 0;
-                                foreach ($MIDs as $MID){
-                                    $stmtt = $conn->prepare("SELECT * FROM meal WHERE ID = :MID ");
-                                    $stmtt->execute(array("MID"=>$MID['MID']));
-                                    $count =  $stmtt -> fetch(PDO::FETCH_ASSOC);
-                                    $img=$count["myFile"];
+                                foreach ($meal_data as $meal){
+                                    $img=$meal["myFile"];
                                     $logodata = $img;
                                     $ii++;
                             ?>
                                 <tr>
                                     <th scope="row"><?php echo $ii?></th>
-                                    <td><img src="data:<?php echo $count['myFile']?>;base64,<?php echo $logodata?>" width="70" height="70" /></td>
-                                    <td><?php echo $count['mealname']?></td>
-                                    <td><?php echo $count['price']?></td>
-                                    <td><?php echo $MID['quantity']?></td>
+                                    <td><img src="data:<?php echo $meal['myFile']?>;base64,<?php echo $logodata?>" width="70" height="70" /></td>
+                                    <td><?php echo $meal['mealname']?></td>
+                                    <td><?php echo $meal['price']?></td>
+                                    <td><?php echo $meal['quantity']?></td>
                                 </tr>
                                 <?php 
                                     } 

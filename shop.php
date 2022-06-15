@@ -20,43 +20,63 @@
       $meal_now = $count["mealname"];
       if (isset($_POST[$meal_now]))
       {
-        $edit_price = $_POST[$meal_now.'p'];
-        $edit_quantity = $_POST[$meal_now.'q'];
-        if(!(empty($edit_price)&&$edit_price!=0) && !(empty($edit_quantity)&&$edit_quantity!=0))
+        $notfinish = "Not_finish";
+        $stmt_confirm = $conn->prepare("SELECT * FROM content,orders WHERE MID = :MID AND content.OID = orders.OID AND orders.status = :notfinish");
+        $stmt_confirm->execute(array("MID"=>$count["ID"],"notfinish"=>$notfinish));
+        if($stmt_confirm->rowCount()==0)
         {
-          if(preg_match("/^((\d+)|(0+))$/",$edit_price)==false && preg_match("/^((\d+)|(0+))$/",$edit_quantity)==false){
-            echo "<script>alert('價錢與數量須為非負整數')</script>";
-          }
-          else if(preg_match("/^((\d+)|(0+))$/",$edit_price)==false){
-            echo "<script>alert('價錢須為非負整數')</script>";
-          }
-          else if(preg_match("/^((\d+)|(0+))$/",$edit_quantity)==false){
-            echo "<script>alert('數量須為非負整數')</script>";
+          $edit_price = $_POST[$meal_now.'p'];
+          $edit_quantity = $_POST[$meal_now.'q'];
+          if(!(empty($edit_price)&&$edit_price!=0) && !(empty($edit_quantity)&&$edit_quantity!=0))
+          {
+            if(preg_match("/^((\d+)|(0+))$/",$edit_price)==false && preg_match("/^((\d+)|(0+))$/",$edit_quantity)==false){
+              echo "<script>alert('價錢與數量須為非負整數')</script>";
+            }
+            else if(preg_match("/^((\d+)|(0+))$/",$edit_price)==false){
+              echo "<script>alert('價錢須為非負整數')</script>";
+            }
+            else if(preg_match("/^((\d+)|(0+))$/",$edit_quantity)==false){
+              echo "<script>alert('數量須為非負整數')</script>";
+            }
+            else{
+              $stmt = $conn->prepare("UPDATE meal SET price = :edit_price, quantity = :edit_quantity WHERE mealname = :meal_now");
+              $stmt->execute(array("edit_price"=>$edit_price, "edit_quantity"=>$edit_quantity, "meal_now"=>$meal_now));
+              $rows = check_meal($conn,$shop_data['name']);
+              $counts = check_meal($conn,$shop_data['name']);
+            }
           }
           else{
-            $stmt = $conn->prepare("UPDATE meal SET price = :edit_price, quantity = :edit_quantity WHERE mealname = :meal_now");
-            $stmt->execute(array("edit_price"=>$edit_price, "edit_quantity"=>$edit_quantity, "meal_now"=>$meal_now));
-            $rows = check_meal($conn,$shop_data['name']);
-            $counts = check_meal($conn,$shop_data['name']);
+            if((empty($edit_price)&&$edit_price!=0) && (empty($edit_quantity)&&$edit_quantity!=0)){
+              echo "<script>alert('價格與數量空白')</script>";
+            }
+            else if((empty($edit_price)&&$edit_price!=0)){
+              echo "<script>alert('價格空白')</script>";
+            }
+            else if((empty($edit_quantity)&&$edit_quantity!=0)){
+              echo "<script>alert('數量空白')</script>";
+            }
           }
         }
-        else{
-          if((empty($edit_price)&&$edit_price!=0) && (empty($edit_quantity)&&$edit_quantity!=0)){
-            echo "<script>alert('價格與數量空白')</script>";
-          }
-          else if((empty($edit_price)&&$edit_price!=0)){
-            echo "<script>alert('價格空白')</script>";
-          }
-          else if((empty($edit_quantity)&&$edit_quantity!=0)){
-            echo "<script>alert('數量空白')</script>";
-          }
+        else
+        {
+          echo "<script>alert('尚有包含此餐點的訂單未完成，請勿更改')</script>";
         }
       }
       if (isset($_POST[$meal_now.'d'])) { 
-        $stmt = $conn->prepare("DELETE FROM meal WHERE mealname = :meal_now");
-        $stmt->execute(array("meal_now"=>$meal_now));
-        $rows = check_meal($conn,$shop_data['name']);
-        $counts = check_meal($conn,$shop_data['name']);
+        $notfinish = "Not_finish";
+        $stmt_confirm = $conn->prepare("SELECT * FROM content,orders WHERE MID = :MID AND content.OID = orders.OID AND orders.status = :notfinish");
+        $stmt_confirm->execute(array("MID"=>$count["ID"],"notfinish"=>$notfinish));
+        if($stmt_confirm->rowCount()==0)
+        {
+          $stmt = $conn->prepare("DELETE FROM meal WHERE mealname = :meal_now");
+          $stmt->execute(array("meal_now"=>$meal_now));
+          $rows = check_meal($conn,$shop_data['name']);
+          $counts = check_meal($conn,$shop_data['name']);
+        }
+        else
+        {
+          echo "<script>alert('尚有包含此餐點的訂單未完成，請勿刪除')</script>";
+        }
       }
     }
   }
