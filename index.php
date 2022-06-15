@@ -27,6 +27,7 @@
           $stmt = $conn->prepare("UPDATE users SET location = ST_GeomFromText(:point), latitude = :latitude, longitude = :longitude WHERE Account = :Account");
           $stmt->execute(array("Account"=>$Account, "latitude"=>$latitude, "longitude"=>$longitude, ':point' => 'POINT(' .$location. ')'));
           $user_data = check_login($conn);
+
         }
       }
       else{
@@ -42,6 +43,20 @@
           echo "<script>alert('經度範圍空白')</script>";
         }
       }
+    }
+    if (isset($_POST['deposit']))
+    {
+      $extra_money = $_POST['money'];
+      if(preg_match("/^[1-9][0-9]*$/" ,$extra_money)){
+        $stmt = $conn->prepare("UPDATE users SET wallet = :wallet  WHERE Account= :Account");
+        $money = $extra_money + $user_data['wallet'];
+        $stmt->execute(array( "Account"=>$Account, "wallet"=> $money ));
+        $user_data = check_login($conn);
+        echo "<script>alert('儲值成功')</script>";
+      }else{
+        echo "<script>alert('輸入須為正整數')</script>";
+      }
+      
     }
     $rows = "none";
     if (isset($_POST['search']))
@@ -246,7 +261,7 @@
               </div>
             </div>
             <div>
-              walletbalance: HW3<br>
+              walletbalance: <?php echo $user_data['wallet']; ?><br>
             </div>
             <!-- Modal -->
             <button type="button " style="margin-left: 5px;" class=" btn btn-info " data-toggle="modal"
@@ -258,12 +273,15 @@
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4 class="modal-title">Add value</h4>
                   </div>
-                  <div class="modal-body">
-                    <input type="text" class="form-control" id="value" placeholder="enter add value">
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Add</button>
-                  </div>
+                  <form method="post">
+                    <div class="modal-body">
+                      <input type="text" class="form-control" id="value" name="money" placeholder="enter add value">
+                    </div>
+                    <div class="modal-footer">
+                      <!--<button type="button" class="btn btn-default" data-dismiss="modal">Add</button>-->
+                      <input type="submit" name="deposit" value="Add" class="btn btn-default">
+                    </div>
+                  </form> 
                 </div>
               </div>
             </div>
