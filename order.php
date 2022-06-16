@@ -1,11 +1,9 @@
 <?php
     session_start();
     include("connection.php");
-    if(!isset($_SESSION['Account']))
-    {
-		header("Location: login.php");
-		die;
-    }
+    include("functions.php");
+    $Account = $_SESSION['Account'];
+    $user_data = check_login($conn);
     if(isset($_SESSION['shop_name_menu'])){
         $shop_name_menu = $_SESSION['shop_name_menu'];
     }
@@ -23,6 +21,7 @@
         $fee = $_SESSION['fee'];
     }
     if(isset($_POST['Order'])){ # 實際產生訂單
+        date_default_timezone_set('Asia/Taipei');
         $now = date("Y-m-d H:i:s");
         $Account = $_SESSION['Account'];
         $total = $fee; # 目前確定的總價只有運費
@@ -36,7 +35,7 @@
                 $shop_account = $stmt_shop_account -> fetch(PDO::FETCH_ASSOC);
                 $shop_account = $shop_account['Account'];
                 # 產生 order 紀錄
-                $stmt_insert_order=$conn->prepare("INSERT into orders (status, start, end, shop_name, user_account, shop_account, fee, total_price) values (:status, :now, :now, :shop_name_menu, :Account, :shop_account, :fee, :total )");
+                $stmt_insert_order=$conn->prepare("INSERT into orders (status, start, shop_name, user_account, shop_account, fee, total_price) values (:status, :now, :shop_name_menu, :Account, :shop_account, :fee, :total )");
                 $stmt_insert_order->execute(array("status"=>$status, "now"=>$now, "shop_name_menu"=>$shop_name_menu, "Account"=>$Account, "fee"=>$fee, "total"=>$total, "shop_account"=>$shop_account));
                 # get order ID
                 $stmt_get_OID=$conn->prepare("SELECT LAST_INSERT_ID() as 'OID'");
