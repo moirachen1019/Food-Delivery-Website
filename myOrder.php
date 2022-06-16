@@ -11,28 +11,30 @@
     $s_query = "SELECT * FROM orders WHERE user_account = :Account :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("Account"=>$Account, "cond"=>$cond));
-
-    $status = $_POST['status'];
-    if(!empty($status))
+    if (isset($_POST['status']))
     {
-      if($status == "All"){
-          //echo "<script>alert('all')</script>";
-          $s_query = "SELECT * FROM orders WHERE user_account = :Account :cond";
+      $status = $_POST['status'];
+      if(!empty($status))
+      {
+        if($status == "All"){
+            //echo "<script>alert('all')</script>";
+            $s_query = "SELECT * FROM orders WHERE user_account = :Account :cond";
+        }
+        else{
+            if($status == "Finished"){
+                $cond = "Finished";
+            }
+            else if($status == "Not_Finish"){
+                $cond = "Not_Finish";
+            }
+            else if($status == "Cancel"){
+                $cond = "Cancel";
+            }
+            $s_query = "SELECT * FROM orders WHERE (user_account = :Account and status = :cond)";
+        }
+        $stmtt = $conn->prepare($s_query);
+        $stmtt->execute(array("Account"=>$Account, "cond"=>$cond));
       }
-      else{
-          if($status == "Finished"){
-              $cond = "Finished";
-          }
-          else if($status == "Not_Finish"){
-              $cond = "Not_Finish";
-          }
-          else if($status == "Cancel"){
-              $cond = "Cancel";
-          }
-          $s_query = "SELECT * FROM orders WHERE (user_account = :Account and status = :cond)";
-      }
-      $stmtt = $conn->prepare($s_query);
-      $stmtt->execute(array("Account"=>$Account, "cond"=>$cond));
     }
     if (isset($_POST['Cancel']))
     {

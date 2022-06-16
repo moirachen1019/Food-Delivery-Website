@@ -11,7 +11,7 @@
     $s_query = "SELECT * FROM record WHERE owner = :owner :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("owner"=>$owner, "cond"=>$cond));
-    if (isset($_POST['refresh']))
+    if (isset($_POST['status']))
     {
       $status = $_POST['status'];
       if(!empty($status))

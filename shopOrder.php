@@ -20,27 +20,31 @@
     $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
-    $status = $_POST['status'];
-    if(!empty($status))
+
+    if (isset($_POST['status']))
     {
-      if($status == "All"){
-          //echo "<script>alert('all')</script>";
-          $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
+      $status = $_POST['status'];
+      if(!empty($status))
+      {
+        if($status == "All"){
+            //echo "<script>alert('all')</script>";
+            $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
+        }
+        else{
+            if($status == "Finished"){
+                $cond = "Finished";
+            }
+            else if($status == "Not_Finish"){
+                $cond = "Not_Finish";
+            }
+            else if($status == "Cancel"){
+                $cond = "Cancel";
+            }
+            $s_query = "SELECT * FROM orders WHERE (shop_name = :shop_data and status = :cond)";
+        }
+        $stmtt = $conn->prepare($s_query);
+        $stmtt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
       }
-      else{
-          if($status == "Finished"){
-              $cond = "Finished";
-          }
-          else if($status == "Not_Finish"){
-              $cond = "Not_Finish";
-          }
-          else if($status == "Cancel"){
-              $cond = "Cancel";
-          }
-          $s_query = "SELECT * FROM orders WHERE (shop_name = :shop_data and status = :cond)";
-      }
-      $stmtt = $conn->prepare($s_query);
-      $stmtt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
     }
     if (isset($_POST['Done']))
     {
