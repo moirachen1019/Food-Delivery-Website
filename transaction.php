@@ -1,15 +1,18 @@
 <?php 
   session_start();
     include("connection.php");
-    include("functions.php");
-    include("select.php");
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     $cond = "";
     $owner = $_SESSION['Account'];
     $s_query = "SELECT * FROM record WHERE owner = :owner :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("owner"=>$owner, "cond"=>$cond));
-    //if (isset($_POST['refresh']))
-    //{
+    if (isset($_POST['refresh']))
+    {
       $status = $_POST['status'];
       if(!empty($status))
       {
@@ -31,7 +34,7 @@
         $stmtt = $conn->prepare($s_query);
         $stmtt->execute(array("owner"=>$owner, "cond"=>$cond));
       }
-    //}
+    }
 ?>
 <!doctype html>
 <html lang="en">
@@ -74,12 +77,11 @@
         <h3>Order</h3>
 
         <div class=" row col-xs-8">
-          <form id="submit1" class="form-horizontal" method="post">
+          <form class="form-horizontal" method="post">
             <div class="form-group">
                 <label class="control-label col-sm-1" for="record">Record</label>
                 <div class="col-sm-5">
-                  <select class="form-control" name="status" onchange="this.form.submit()">
-                    <option id="All"></option>
+                  <select class="form-control" name="status">
                     <option id="All">All</option>
                     <option id="Payment">Payment</option>
                     <option id="Receive">Receive</option>
@@ -87,7 +89,7 @@
                   </select>
                 </div>
             </div>
-            <!--<input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;">-->
+            <input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;">
           </form>
 
           <div class="row">

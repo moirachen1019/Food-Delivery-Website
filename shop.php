@@ -17,16 +17,16 @@
     
     foreach ($counts as $count)
     {
-      $meal_now = $count["mealname"];
-      if (isset($_POST[$meal_now]))
+      $meal_now = $count["ID"];
+      if (isset($_POST['edit'.$meal_now]))
       {
         $notfinish = "Not_finish";
         $stmt_confirm = $conn->prepare("SELECT * FROM content,orders WHERE MID = :MID AND content.OID = orders.OID AND orders.status = :notfinish");
         $stmt_confirm->execute(array("MID"=>$count["ID"],"notfinish"=>$notfinish));
         if($stmt_confirm->rowCount()==0)
         {
-          $edit_price = $_POST[$meal_now.'p'];
-          $edit_quantity = $_POST[$meal_now.'q'];
+          $edit_price = $_POST['p'.$meal_now];
+          $edit_quantity = $_POST['q'.$meal_now];
           if(!(empty($edit_price)&&$edit_price!=0) && !(empty($edit_quantity)&&$edit_quantity!=0))
           {
             if(preg_match("/^((\d+)|(0+))$/",$edit_price)==false && preg_match("/^((\d+)|(0+))$/",$edit_quantity)==false){
@@ -39,7 +39,7 @@
               echo "<script>alert('數量須為非負整數')</script>";
             }
             else{
-              $stmt = $conn->prepare("UPDATE meal SET price = :edit_price, quantity = :edit_quantity WHERE mealname = :meal_now");
+              $stmt = $conn->prepare("UPDATE meal SET price = :edit_price, quantity = :edit_quantity WHERE ID = :meal_now");
               $stmt->execute(array("edit_price"=>$edit_price, "edit_quantity"=>$edit_quantity, "meal_now"=>$meal_now));
               $rows = check_meal($conn,$shop_data['name']);
               $counts = check_meal($conn,$shop_data['name']);
@@ -62,13 +62,13 @@
           echo "<script>alert('尚有包含此餐點的訂單未完成，請勿更改')</script>";
         }
       }
-      if (isset($_POST[$meal_now.'d'])) { 
+      if (isset($_POST['d'.$meal_now])) { 
         $notfinish = "Not_finish";
         $stmt_confirm = $conn->prepare("SELECT * FROM content,orders WHERE MID = :MID AND content.OID = orders.OID AND orders.status = :notfinish");
         $stmt_confirm->execute(array("MID"=>$count["ID"],"notfinish"=>$notfinish));
         if($stmt_confirm->rowCount()==0)
         {
-          $stmt = $conn->prepare("DELETE FROM meal WHERE mealname = :meal_now");
+          $stmt = $conn->prepare("DELETE FROM meal WHERE ID = :meal_now");
           $stmt->execute(array("meal_now"=>$meal_now));
           $rows = check_meal($conn,$shop_data['name']);
           $counts = check_meal($conn,$shop_data['name']);
@@ -120,7 +120,7 @@
 		}
     else
     {
-      $stmt = $conn->prepare("SELECT * FROM shop WHERE name = :shopname COLLATE utf8mb4_bin LIMIT 1");
+      $stmt = $conn->prepare("SELECT * FROM shop WHERE name = :shopname LIMIT 1");
 			$stmt->execute(array("shopname"=>$shopname));
 
       if($stmt->rowCount() > 0)
@@ -367,9 +367,9 @@
                     <td><?php echo $row['mealname']?></td>
                     <td><?php echo $row['price']?></td>
                     <td><?php echo $row['quantity']?></td>
-                    <td><button type="button" class="btn btn-info" data-toggle="modal" data-target="#<?php echo str_replace(' ','_',$row['mealname'])?>" >Edit</button></td>
+                    <td><button type="button" class="btn btn-info" data-toggle="modal" data-target="#id<?php echo $row['ID']?>" >Edit</button></td>
                     <!-- Modal -->
-                      <div class="modal fade" id="<?php echo str_replace(' ','_',$row['mealname'])?>" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                      <div class="modal fade" id="id<?php echo $row['ID']?>" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="staticBackdropLabel" aria-hidden="true">
                         <form method="post">
                           <div class="modal-dialog" role="document">
                             <div class="modal-content">
@@ -383,17 +383,17 @@
                                 <div class="row" >
                                   <div class="col-xs-6">
                                     <label>price</label>
-                                    <input class="form-control" name="<?php echo $row['mealname']?>p" type="text">
+                                    <input class="form-control" name="p<?php echo $row['ID']?>" type="text">
                                   </div>
                                   <div class="col-xs-6">
                                     <label>quantity</label>
-                                    <input class="form-control" name="<?php echo $row['mealname']?>q" type="text">
+                                    <input class="form-control" name="q<?php echo $row['ID']?>" type="text">
                                   </div>
                                 </div>
 
                               </div>
                               <div class="modal-footer">
-                                <input type="submit" class="btn btn-secondary" name="<?php echo $row['mealname']?>" value="Edit">
+                                <input type="submit" class="btn btn-secondary" name="edit<?php echo $row['ID']?>" value="Edit">
                               </div>
                             </div>
                           </div>
@@ -401,7 +401,7 @@
               </div>
                       <form method="post">
                         <td>
-                          <input type="submit" class="btn btn-danger" name="<?php echo $row['mealname']?>d" value="Delete">
+                          <input type="submit" class="btn btn-danger" name="d<?php echo $row['ID']?>" value="Delete">
                         </td>
                       </form>
                     </tr>
