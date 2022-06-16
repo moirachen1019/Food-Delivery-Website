@@ -1,6 +1,11 @@
 <?php
     session_start();
     include("connection.php");
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     if(isset($_SESSION['shop_name_menu'])){
         $shop_name_menu = $_SESSION['shop_name_menu'];
     }

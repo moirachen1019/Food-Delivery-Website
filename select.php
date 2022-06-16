@@ -2,6 +2,11 @@
     //error_reporting(E_ALL || ~E_NOTICE);
     session_start();
     include("connection.php");
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     $money = 0;
     $fee = 0;
     if(isset($_POST['shop_name_menu']) && isset($_POST['distance']))

@@ -2,6 +2,11 @@
     //error_reporting(E_ALL || ~E_NOTICE);
     session_start();
     include("connection.php");
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     if(isset($_POST['OID'])){  
         $arr = explode("id", $_POST['OID']);
         $OID = $arr[1];
