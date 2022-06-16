@@ -1,11 +1,8 @@
 <?php 
   session_start();
     include("connection.php");
-    if(!isset($_SESSION['Account']))
-    {
-		header("Location: login.php");
-		die;
-    }
+    include("functions.php");
+    include("select.php");
     $cond = "";
     if (isset($_POST['refresh']))
     {
@@ -20,27 +17,30 @@
     $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
-    $status = $_POST['status'];
-    if(!empty($status))
+    if (isset($_POST['status']))
     {
-      if($status == "All"){
-          //echo "<script>alert('all')</script>";
-          $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
+      $status = $_POST['status'];
+      if(!empty($status))
+      {
+        if($status == "All"){
+            //echo "<script>alert('all')</script>";
+            $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
+        }
+        else{
+            if($status == "Finished"){
+                $cond = "Finished";
+            }
+            else if($status == "Not_Finish"){
+                $cond = "Not_Finish";
+            }
+            else if($status == "Cancel"){
+                $cond = "Cancel";
+            }
+            $s_query = "SELECT * FROM orders WHERE (shop_name = :shop_data and status = :cond)";
+        }
+        $stmtt = $conn->prepare($s_query);
+        $stmtt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
       }
-      else{
-          if($status == "Finished"){
-              $cond = "Finished";
-          }
-          else if($status == "Not_Finish"){
-              $cond = "Not_Finish";
-          }
-          else if($status == "Cancel"){
-              $cond = "Cancel";
-          }
-          $s_query = "SELECT * FROM orders WHERE (shop_name = :shop_data and status = :cond)";
-      }
-      $stmtt = $conn->prepare($s_query);
-      $stmtt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
     }
     if (isset($_POST['Done']))
     {
@@ -175,6 +175,7 @@
                   </select>
                 </div>
             </div>
+            <!-- <input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;"> -->
           </form>
 
           <div class="row">
