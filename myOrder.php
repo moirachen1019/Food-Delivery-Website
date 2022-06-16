@@ -11,30 +11,28 @@
     $s_query = "SELECT * FROM orders WHERE user_account = :Account :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("Account"=>$Account, "cond"=>$cond));
-    if (isset($_POST['refresh']))
+
+    $status = $_POST['status'];
+    if(!empty($status))
     {
-      $status = $_POST['status'];
-      if(!empty($status))
-      {
-        if($status == "All"){
-            //echo "<script>alert('all')</script>";
-            $s_query = "SELECT * FROM orders WHERE user_account = :Account :cond";
-        }
-        else{
-            if($status == "Finished"){
-                $cond = "Finished";
-            }
-            else if($status == "Not_Finish"){
-                $cond = "Not_Finish";
-            }
-            else if($status == "Cancel"){
-                $cond = "Cancel";
-            }
-            $s_query = "SELECT * FROM orders WHERE (user_account = :Account and status = :cond)";
-        }
-        $stmtt = $conn->prepare($s_query);
-        $stmtt->execute(array("Account"=>$Account, "cond"=>$cond));
+      if($status == "All"){
+          //echo "<script>alert('all')</script>";
+          $s_query = "SELECT * FROM orders WHERE user_account = :Account :cond";
       }
+      else{
+          if($status == "Finished"){
+              $cond = "Finished";
+          }
+          else if($status == "Not_Finish"){
+              $cond = "Not_Finish";
+          }
+          else if($status == "Cancel"){
+              $cond = "Cancel";
+          }
+          $s_query = "SELECT * FROM orders WHERE (user_account = :Account and status = :cond)";
+      }
+      $stmtt = $conn->prepare($s_query);
+      $stmtt->execute(array("Account"=>$Account, "cond"=>$cond));
     }
     if (isset($_POST['Cancel']))
     {
@@ -145,7 +143,7 @@
             <div class="form-group">
                 <label class="control-label col-sm-1" for="status">Status</label>
                 <div class="col-sm-5">
-                  <select class="form-control" name="status">
+                <select class="form-control" name="status" onchange="this.form.submit()">
                     <option id="All">All</option>
                     <option id="Finished">Finished</option>
                     <option id="Not_Finish">Not_Finish</option>
@@ -153,7 +151,6 @@
                   </select>
                 </div>
             </div>
-            <input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;">
           </form>
 
           <div class="row">
