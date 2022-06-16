@@ -2,11 +2,9 @@
     //error_reporting(E_ALL || ~E_NOTICE);
     session_start();
     include("connection.php");
-    if(!isset($_SESSION['Account']))
-    {
-		header("Location: login.php");
-		die;
-    }
+    include("functions.php");
+    $Account = $_SESSION['Account'];
+    $user_data = check_login($conn);
     if(isset($_POST['OID'])){  
         $arr = explode("id", $_POST['OID']);
         $OID = $arr[1];
@@ -42,13 +40,27 @@
                                 $meal_data =  $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 $ii = 0;
                                 foreach ($meal_data as $meal){
-                                    $img=$meal["myFile"];
-                                    $logodata = $img;
+                                    $test = "yes";
+                                    $stmt_temp = $conn->prepare("SELECT * FROM meal WHERE ID = :MID");
+                                    $stmt_temp->execute(array("MID"=>$meal['MID']));
+                                    if($stmt_temp->rowCount() != 0){
+                                        $meal_img = $stmt_temp -> fetch(PDO::FETCH_ASSOC);
+                                        $img = $meal_img["myFile"];
+                                        $logodata = $img;
+                                    }
+                                    else{
+                                        $test="no";
+                                    }
                                     $ii++;
                             ?>
                                 <tr>
                                     <th scope="row"><?php echo $ii?></th>
-                                    <td><img src="data:<?php echo $meal['myFile']?>;base64,<?php echo $logodata?>" width="70" height="70" /></td>
+                                    <?php if($test=="yes"){ ?>
+                                        <td><img src="data:<?php echo $meal_img['myFile']?>;base64,<?php echo $logodata?>" width="70" height="70" /></td>
+                                    <?php } ?>
+                                    <?php if($test=="no"){ ?>
+                                        <td>商品已下架</td>
+                                    <?php } ?>
                                     <td><?php echo $meal['mealname']?></td>
                                     <td><?php echo $meal['price']?></td>
                                     <td><?php echo $meal['quantity']?></td>

@@ -1,11 +1,9 @@
 <?php 
   session_start();
     include("connection.php");
-    if(!isset($_SESSION['Account']))
-    {
-		header("Location: login.php");
-		die;
-    }
+    include("functions.php");
+    $Account = $_SESSION['Account'];
+    $user_data = check_login($conn);
     $cond = "";
     $owner = $_SESSION['Account'];
     $s_query = "SELECT * FROM record WHERE owner = :owner :cond";
@@ -81,7 +79,7 @@
             <div class="form-group">
                 <label class="control-label col-sm-1" for="record">Record</label>
                 <div class="col-sm-5">
-                  <select class="form-control" name="status">
+                  <select class="form-control" name="status" onchange="this.form.submit()">
                     <option id="All">All</option>
                     <option id="Payment">Payment</option>
                     <option id="Receive">Receive</option>
@@ -133,7 +131,12 @@
     </div>
   </div>
 
-
+  <script>
+    var option = document.getElementById("<?php if(isset($_POST['status'])){ echo $_POST['status']; } ?>");
+    if(option){
+        option.setAttribute('selected', 'selected');
+    }
+  </script>
 
 </body>
 
