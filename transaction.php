@@ -89,7 +89,6 @@
                   </select>
                 </div>
             </div>
-            <input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;">
           </form>
 
           <div class="row">
