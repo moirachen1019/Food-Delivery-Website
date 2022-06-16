@@ -1,9 +1,11 @@
 <?php
     session_start();
     include("connection.php");
-    include("functions.php");
-    $Account = $_SESSION['Account'];
-    $user_data = check_login($conn);
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     if(isset($_SESSION['shop_name_menu'])){
         $shop_name_menu = $_SESSION['shop_name_menu'];
     }
@@ -21,7 +23,6 @@
         $fee = $_SESSION['fee'];
     }
     if(isset($_POST['Order'])){ # 實際產生訂單
-        date_default_timezone_set('Asia/Taipei');
         $now = date("Y-m-d H:i:s");
         $Account = $_SESSION['Account'];
         $total = $fee; # 目前確定的總價只有運費
@@ -35,80 +36,78 @@
                 $shop_account = $stmt_shop_account -> fetch(PDO::FETCH_ASSOC);
                 $shop_account = $shop_account['Account'];
                 # 產生 order 紀錄
-                $stmt_insert_order=$conn->prepare("INSERT into orders (status, start, shop_name, user_account, shop_account, fee, total_price) values (:status, :now, :shop_name_menu, :Account, :shop_account, :fee, :total )");
+                $stmt_insert_order=$conn->prepare("INSERT into orders (status, start, end, shop_name, user_account, shop_account, fee, total_price) values (:status, :now, :now, :shop_name_menu, :Account, :shop_account, :fee, :total )");
                 $stmt_insert_order->execute(array("status"=>$status, "now"=>$now, "shop_name_menu"=>$shop_name_menu, "Account"=>$Account, "fee"=>$fee, "total"=>$total, "shop_account"=>$shop_account));
                 # get order ID
                 $stmt_get_OID=$conn->prepare("SELECT LAST_INSERT_ID() as 'OID'");
                 $stmt_get_OID->execute();
                 $OID_now = $stmt_get_OID -> fetch(PDO::FETCH_ASSOC);
                 $OID_now = $OID_now['OID'];
+                $error1 = '';
+                $error2 = '';
+                $error3 = '';
+                $flag1 = 0;
+                $flag2 = 0;
+                $flag3 = 0;
                 for($ii = 0; $ii < $arrLength; $ii++) {
                     # 分別取得 meal 資料
-                    try{
+                    
+                    
+                    // $sql = $conn->prepare("SELECT isnull(*) FROM meal WHERE shopname = $shop_name_menu and mealname = $arr_m[$ii] ");
+                    // if(!$sql){
+                    //     $flag1 = 1;
+                    //     break;
+                    // }
                         $stmt_select_meal = $conn->prepare("SELECT * FROM meal WHERE shopname = :shop_name_menu and mealname = :mealn ");
+                        
                         $stmt_select_meal->execute(array("shop_name_menu"=>$shop_name_menu, "mealn"=>$arr_m[$ii]));
                         $m_data = $stmt_select_meal -> fetch(PDO::FETCH_ASSOC);
-                    }
-                    catch(Exception $e){
-                        if ($conn->inTransaction())
-                        $conn->rollBack();
-                        echo "<script>alert('商品已被移除')</script>";
-                    }
-                    $q = $arr_q[$ii];
-                    $new_q = $m_data['quantity'] - $q;
-                    # order 的 meal list
-                    $stmt_insert_content=$conn->prepare("INSERT into content (OID, MID, mealname, price, quantity) values (:OID_now, :MID, :mealname, :p, :q)");
-                    $stmt_insert_content->execute(array("OID_now"=>$OID_now, "MID"=>$m_data['ID'], "mealname"=>$m_data['mealname'], "p"=>$m_data['price'], "q"=>$q)); #TODO 待補file
-                    # meal 數量更新
-                    $stmt_update_meal=$conn->prepare("UPDATE meal SET quantity = :new_q WHERE shopname = :shop_name_menu and mealname = :mealn ");
-                    $stmt_update_meal->execute(array("new_q"=>$new_q, "shop_name_menu"=>$shop_name_menu, "mealn"=>$arr_m[$ii]));
-                    $total = $total + $arr_q[$ii] * $m_data['price'];
-                }
-                # order 紀錄更新
-                $stmt_update_order=$conn->prepare("UPDATE orders SET total_price = :total WHERE OID = :OID_now ");
-                $stmt_update_order->execute(array("total"=>$total, "OID_now"=>$OID_now));
-                # 使用者扣款
-                $stmt6=$conn->prepare("SELECT wallet FROM users WHERE Account= :Account");
-                $stmt6->execute(array("Account"=>$Account));
-                $wallet = $stmt6 -> fetch(PDO::FETCH_ASSOC);
-                $wallet = $wallet['wallet'];
-                
-                if($wallet - $total < 0){
-                    echo "<script>alert('餘額不足')</script>";
-                    $conn->rollBack();          
-                }else if(preg_match("/^((-\d+)|(0+))$/" ,$q)){
-                    echo "<script>alert('輸入的數量需為正整數')</script>";
-                    $conn->rollBack();
-                }else if($new_q<0){
-                    echo "<script>alert('店家商品數量不足')</script>";
-                    $conn->rollBack();
-                }
-                else{
-                    $stmt7=$conn->prepare("UPDATE users SET wallet = (:wallet - :total) WHERE Account= :Account");
-                    $stmt7->execute(array("wallet"=>$wallet, "total"=>$total, "Account"=>$Account));
-                }
-                # 店家收款
-                $stmt8=$conn->prepare("SELECT Account FROM shop WHERE name= :shop_name_menu");
-                $stmt8->execute(array("shop_name_menu"=>$shop_name_menu));
-                $shop_Account = $stmt8 -> fetch(PDO::FETCH_ASSOC);
-                $shop_Account = $shop_Account['Account'];
-                $stmt9=$conn->prepare("UPDATE users SET wallet = ((SELECT wallet FROM users WHERE Account = :shop_Account) + :total) WHERE Account= :shop_Account");
-                $stmt9->execute(array("shop_Account"=>$shop_Account, "total"=>$total));
-                # 使用者交易紀錄
-                $action = "Payment";
-                $sub = '-'.$total;
-                $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:Account, :action, :now, :shop_name_menu, :sub )");
-                $stmt10->execute(array("Account"=>$Account, "action"=>$action, "now"=>$now, "shop_name_menu"=>$shop_name_menu, "sub"=>$sub));
-                # 店家交易紀錄
-                $action = "Receive";
-                $add = '+'.$total;
-                $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:shop_Account, :action, :now, :Account, :add )");
-                $stmt10->execute(array("Account"=>$Account, "action"=>$action, "now"=>$now, "shop_Account"=>$shop_Account, "add"=>$add));
-            $conn->commit();
-            header("Refresh:0.5 ; url=index.php");
-            echo "<script>alert('訂購成功')</script>";
-            die;
+                        
 
+                        $q = $arr_q[$ii];
+                        $new_q = $m_data['quantity'] - $q;
+
+                        $stmt_select_meal2 = $conn->prepare("SELECT myFile FROM meal WHERE shopname = :shop_name_menu and mealname = :mealn ");
+                        $stmt_select_meal2->execute(array("shop_name_menu"=>$shop_name_menu, "mealn"=>$arr_m[$ii]));
+                        $stmt_select_meal2->bindColumn(1, $fileContents, PDO::PARAM_LOB);
+                        $stmt_select_meal2 -> fetch(PDO::FETCH_BOUND);
+                        //echo "$fileContents";
+                        //print($myFile);
+
+                        # order 的 meal list
+                        $stmt_insert_content=$conn->prepare("INSERT into content (OID, MID, mealname, price, quantity, myFile) values (:OID_now, :MID, :mealname, :p, :q, :fileContents)");
+                        $stmt_insert_content->execute(array("OID_now"=>$OID_now, "MID"=>$m_data['ID'], "mealname"=>$m_data['mealname'], "p"=>$m_data['price'], "q"=>$q, "fileContents"=>$fileContents)); #TODO 待補file
+                        # meal 數量更新
+                        $stmt_update_meal=$conn->prepare("UPDATE meal SET quantity = :new_q WHERE shopname = :shop_name_menu and mealname = :mealn ");
+                        $stmt_update_meal->execute(array("new_q"=>$new_q, "shop_name_menu"=>$shop_name_menu, "mealn"=>$arr_m[$ii]));
+                        $total = $total + $arr_q[$ii] * $m_data['price'];
+
+                        // echo '<script> alert("'.$arr_m[$ii].'")</script>';
+                        // $conn->rollBack(); 
+                        // $error1=$error1.$arr_m[$ii];
+                        // $error1=$error1." ";
+                        // $flag1 = 1;
+
+                    
+                    if(!preg_match("/^[1-9][0-9]*$/" ,$q)){
+                        $error2=$error2.$arr_m[$ii];
+                        $error2=$error2." ";
+                        $flag2 = 1;
+                    }
+                    if($new_q<0){
+                        $error3=$error3.$arr_m[$ii];
+                        $error3=$error3." ";
+                        $flag3 = 1;
+                    }
+                }
+
+                // if($flag1==1){
+                //     $tmp_all = "已被移除";
+			    //     //$error1.= $tmp_all;
+			    //     echo '<script> alert("'.$tmp_all.'")</script>';
+                //     $conn->rollBack();  
+                // }
+                // else 
         }
         catch(Exception $e)
         {
@@ -120,13 +119,66 @@
             <html>
                 <body>
                 <script>
-                alert("$msg");
+                alert("商品已被移除");
                 window.location.replace("index.php");
                 </script>
                 </body>
             </html>
             EOT;
         }
+
+        if($flag2==1){
+            $tmp_all = "不為正整數";
+            $error2.= $tmp_all;
+            echo '<script> alert("'.$error2.'")</script>';
+            $conn->rollBack(); 
+        }else if($flag3==1){
+            $tmp_all = "庫存數量不足";
+            $error3.= $tmp_all;
+            echo '<script> alert("'.$error3.'")</script>';
+            $conn->rollBack(); 
+        }else if($wallet - $total < 0){
+            echo "<script>alert('餘額不足')</script>";
+            $conn->rollBack();          
+        }else{
+            # order 紀錄更新
+        $stmt_update_order=$conn->prepare("UPDATE orders SET total_price = :total WHERE OID = :OID_now ");
+        $stmt_update_order->execute(array("total"=>$total, "OID_now"=>$OID_now));
+        # 使用者扣款
+        $stmt6=$conn->prepare("SELECT wallet FROM users WHERE Account= :Account");
+        $stmt6->execute(array("Account"=>$Account));
+        $wallet = $stmt6 -> fetch(PDO::FETCH_ASSOC);
+        $wallet = $wallet['wallet'];
+
+        $stmt7=$conn->prepare("UPDATE users SET wallet = (:wallet - :total) WHERE Account= :Account");
+        $stmt7->execute(array("wallet"=>$wallet, "total"=>$total, "Account"=>$Account));
+
+        # 店家收款
+        $stmt8=$conn->prepare("SELECT Account FROM shop WHERE name= :shop_name_menu");
+        $stmt8->execute(array("shop_name_menu"=>$shop_name_menu));
+        $shop_Account = $stmt8 -> fetch(PDO::FETCH_ASSOC);
+        $shop_Account = $shop_Account['Account'];
+        $stmt9=$conn->prepare("UPDATE users SET wallet = ((SELECT wallet FROM users WHERE Account = :shop_Account) + :total) WHERE Account= :shop_Account");
+        $stmt9->execute(array("shop_Account"=>$shop_Account, "total"=>$total));
+        # 使用者交易紀錄
+        $action = "Payment";
+        $sub = '-'.$total;
+        $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:Account, :action, :now, :shop_name_menu, :sub )");
+        $stmt10->execute(array("Account"=>$Account, "action"=>$action, "now"=>$now, "shop_name_menu"=>$shop_name_menu, "sub"=>$sub));
+        # 店家交易紀錄
+        $action = "Receive";
+        $add = '+'.$total;
+        $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:shop_Account, :action, :now, :Account, :add )");
+        $stmt10->execute(array("Account"=>$Account, "action"=>$action, "now"=>$now, "shop_Account"=>$shop_Account, "add"=>$add));
+        $conn->commit();
+        header("Refresh:0.5 ; url=index.php");
+        echo "<script>alert('訂購成功')</script>";
+        die;
+        
+        }
+
+        
+
 
     }
 

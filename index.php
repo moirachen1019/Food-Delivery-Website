@@ -44,13 +44,21 @@
         }
       }
     }
+    
+    
     if (isset($_POST['deposit']))
     {
       $extra_money = $_POST['money'];
       if(preg_match("/^[1-9][0-9]*$/" ,$extra_money)){
+
         $stmt = $conn->prepare("UPDATE users SET wallet = :wallet  WHERE Account= :Account");
         $money = $extra_money + $user_data['wallet'];
         $stmt->execute(array( "Account"=>$Account, "wallet"=> $money ));
+        $action = "Recharge";
+        $now = date("Y-m-d H:i:s");
+        $add = '+'.$extra_money;
+        $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:user, :action, :now, :user, :add )");
+        $stmt10->execute(array("user"=>$user_data['Account'], "action"=>$action, "now"=>$now, "add"=>$add));
         $user_data = check_login($conn);
         echo "<script>alert('儲值成功')</script>";
       }else{

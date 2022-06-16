@@ -2,9 +2,11 @@
     //error_reporting(E_ALL || ~E_NOTICE);
     session_start();
     include("connection.php");
-    include("functions.php");
-    $Account = $_SESSION['Account'];
-    $user_data = check_login($conn);
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     if(isset($_POST['OID'])){  
         $arr = explode("id", $_POST['OID']);
         $OID = $arr[1];
@@ -38,29 +40,27 @@
                                 $stmt = $conn->prepare("SELECT * FROM content WHERE OID = :OID ");
                                 $stmt->execute(array("OID"=>$OID));
                                 $meal_data =  $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                $stmt1 = $conn->prepare("SELECT myFile FROM meal WHERE shopname = :shop_name_menu and mealname = :mealn ");
+                                $stmt1->execute(array("OID"=>$OID));
+                                $meal_data1 =  $stmt1->fetchAll(PDO::FETCH_ASSOC);
+
                                 $ii = 0;
                                 foreach ($meal_data as $meal){
-                                    $test = "yes";
-                                    $stmt_temp = $conn->prepare("SELECT * FROM meal WHERE ID = :MID");
-                                    $stmt_temp->execute(array("MID"=>$meal['MID']));
-                                    if($stmt_temp->rowCount() != 0){
-                                        $meal_img = $stmt_temp -> fetch(PDO::FETCH_ASSOC);
-                                        $img = $meal_img["myFile"];
-                                        $logodata = $img;
-                                    }
-                                    else{
-                                        $test="no";
-                                    }
+                                    //$img=$_GET[$meal["myFile"]];
+                                    //$logodata = $img;
                                     $ii++;
+                                    // $sql = "SELECT myFile FROM content WHERE OID = :OID ";
+                                    // $sth = $conn->query($sql);
+                                    // $result=mysqli_fetch_array($sth);
+                                    $sth = $conn->prepare("SELECT myFile FROM content WHERE OID = :OID ");
+                                    $sth->execute(array("OID"=>$OID));
+                                    $result =  $sth->fetchAll(PDO::FETCH_ASSOC);
+                                    
                             ?>
                                 <tr>
                                     <th scope="row"><?php echo $ii?></th>
-                                    <?php if($test=="yes"){ ?>
-                                        <td><img src="data:<?php echo $meal_img['myFile']?>;base64,<?php echo $logodata?>" width="70" height="70" /></td>
-                                    <?php } ?>
-                                    <?php if($test=="no"){ ?>
-                                        <td>商品已下架</td>
-                                    <?php } ?>
+                                    <td><?php echo '<img src="images/'.$meal_data1[$ii].'">';?></td>
                                     <td><?php echo $meal['mealname']?></td>
                                     <td><?php echo $meal['price']?></td>
                                     <td><?php echo $meal['quantity']?></td>
@@ -71,7 +71,7 @@
                         </tobody>
                     </table>
                     </div>
-                </div>
+                 </div>
             </div>
 
             <div class="modal-footer">

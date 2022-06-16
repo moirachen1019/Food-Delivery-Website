@@ -1,9 +1,11 @@
 <?php 
   session_start();
     include("connection.php");
-    include("functions.php");
-    $Account = $_SESSION['Account'];
-    $user_data = check_login($conn);
+    if(!isset($_SESSION['Account']))
+    {
+		header("Location: login.php");
+		die;
+    }
     $cond = "";
     $owner = $_SESSION['Account'];
     $s_query = "SELECT * FROM record WHERE owner = :owner :cond";
@@ -131,12 +133,7 @@
     </div>
   </div>
 
-  <script>
-    var option = document.getElementById("<?php if(isset($_POST['status'])){ echo $_POST['status']; } ?>");
-    if(option){
-        option.setAttribute('selected', 'selected');
-    }
-  </script>
+
 
 </body>
 
