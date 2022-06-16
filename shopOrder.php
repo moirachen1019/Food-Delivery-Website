@@ -17,8 +17,8 @@
     $s_query = "SELECT * FROM orders WHERE shop_name = :shop_data :cond";
     $stmt = $conn->prepare($s_query);
     $stmt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
-    if (isset($_POST['refresh']))
-    {
+    //if (isset($_POST['refresh']))
+    //{
       $status = $_POST['status'];
       if(!empty($status))
       {
@@ -41,7 +41,7 @@
         $stmtt = $conn->prepare($s_query);
         $stmtt->execute(array("shop_data"=>$shop_data, "cond"=>$cond));
       }
-    }
+    //}
     if (isset($_POST['Done']))
     {
         $whichOrderDone = $_POST['whichOrderDone'];
@@ -167,7 +167,7 @@
             <div class="form-group">
                 <label class="control-label col-sm-1" for="status">Status</label>
                 <div class="col-sm-5">
-                  <select class="form-control" name="status">
+                  <select class="form-control" name="status" onchange="this.form.submit()">
                     <option id="All">All</option>
                     <option id="Finished">Finished</option>
                     <option id="Not_Finish">Not_Finish</option>
@@ -175,7 +175,7 @@
                   </select>
                 </div>
             </div>
-            <input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;">
+            <!-- <input type="submit" name="refresh" value="Refresh" class="btn btn-primary" style="margin-left: 18px;"> -->
           </form>
 
           <div class="row">
