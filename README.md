@@ -1,5 +1,5 @@
-# Database_HW-Food_delivery_website_setup
-## 2022-Spring-NYCU by Prof.Jiun-Long Huang
+# Food_Delivery_Website
+## An interactive website like UberEats
 - Team Project
 - Database administration tool : phpmyadmin
 - Localhost only
