@@ -1,4 +1,4 @@
-# Food_Delivery_Website
+# Food-Delivery-Website
 ## An interactive website like UberEats
 - Team Project
 - Database administration tool : phpmyadmin
